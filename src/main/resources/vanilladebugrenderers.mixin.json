@@ -1,0 +1,16 @@
+{
+    "required": true,
+    "package": "com.vivi.vanilladebugrenderers.mixin",
+    "compatibilityLevel": "JAVA_17",
+    "mixins": [
+        "DebugPacketsMixin",
+        "PathMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    },
+    "refmap": "vanilladebugrenderers.mixin.refmap.json",
+    "client": [
+        "DebugRendererMixin"
+    ]
+}
