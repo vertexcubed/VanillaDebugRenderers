@@ -3,6 +3,7 @@ package com.vivi.vanilladebugrenderers.mixin;
 import io.netty.buffer.Unpooled;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.game.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.game.DebugPackets;
@@ -18,6 +19,7 @@ import net.minecraft.world.entity.animal.Bee;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.entity.BeehiveBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
@@ -25,6 +27,8 @@ import net.minecraft.world.level.gameevent.GameEventListener;
 import net.minecraft.world.level.gameevent.PositionSource;
 import net.minecraft.world.level.gameevent.PositionSourceType;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.StructurePiece;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -68,6 +72,22 @@ public abstract class DebugPacketsMixin {
         buf.writeFloat(pMaxDistanceToWaypoint);
         pPath.writeToStream(buf);
         sendPacketToAllPlayers((ServerLevel) pLevel, buf, ClientboundCustomPayloadPacket.DEBUG_PATHFINDING_PACKET);
+    }
+
+    @Inject(method = "sendStructurePacket", at = @At("HEAD"))
+    private static void vdr$sendStructurePacket(WorldGenLevel pLevel, StructureStart pStructureStart, CallbackInfo ci) {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        ResourceLocation loc = pLevel.registryAccess().registryOrThrow(Registries.DIMENSION_TYPE).getKey(pLevel.dimensionType());
+        assert loc != null;
+        buf.writeResourceLocation(loc);
+        writeBoundingBox(buf, pStructureStart.getBoundingBox());
+        List<StructurePiece> pieces = pStructureStart.getPieces();
+        buf.writeInt(pieces.size());
+        for(int i = 0; i < pieces.size(); i++) {
+            writeBoundingBox(buf, pieces.get(i).getBoundingBox());
+            buf.writeBoolean(i == 0);
+        }
+        sendPacketToAllPlayers(pLevel.getLevel(), buf, ClientboundCustomPayloadPacket.DEBUG_STRUCTURES_PACKET);
     }
 
     @Inject(method = "sendNeighborsUpdatePacket", at = @At("HEAD"))
